@@ -1,16 +1,26 @@
 ## Saberafter 维护分支
 
 本仓库 fork 自 [dafeiwu666/astrbot_plugin_ppnai](https://github.com/dafeiwu666/astrbot_plugin_ppnai)，保留上游作者与 MIT 许可证。
-本分支维护分主题帮助及后续模型适配，已移除未使用的快速帮助和旧整页帮助资源。
+本分支维护分主题帮助及 V5 Medium 模型适配，已移除未使用的快速帮助和旧整页帮助资源。
 
 本机开发、测试后推送 GitHub；VPS 更新需要主动拉取并重载插件，不会在推送时自动更新。
 开发与部署说明见 [DEVELOPMENT.md](docs/DEVELOPMENT.md)。
+
+### V5 Medium
+
+使用 `model=nai5_medium` 或 `model=nai-diffusion-5-full-medium` 选择。
+插件会使用固定 14 步、Euler Ancestral、官方 Heavy 负面预设，
+并关闭 CFG Rescale 和 SMEA；这些固定设置优先于全局默认值、预设和单次参数。
+其他模型的默认值和参数行为保持不变。
+V5 的 Opus 免 Anlas 生成仍受可恢复额度条限制，不是完全无限生成。
+适配依据和使用示例见 [V5_MEDIUM.md](docs/V5_MEDIUM.md)。
 
 ## 📖 简介
 发送**/nai**查看帮助
 本插件为 AstrBot 带来了强大的 **NovelAI** 绘图能力。它不仅仅是一个简单的 API 调用工具，还集成了 **LLM 辅助生图**、**自动绘图**、**额度管理**、**队列系统**以及 NovelAI 的高级功能（如氛围转移 Vibe Transfer、角色保持 Character Keep）。
 
-支持 **Opus 免费模式**（小图模式），订阅用户可无限畅玩。
+支持 **Opus 免 Anlas 参数限制**（小图模式）。V5 仍消耗可恢复额度条，
+额度不足或不满足免 Anlas 条件时可能扣点，以 NovelAI 服务端为准。
 
 > 💬 **交流与反馈**
 > 欢迎加入 QQ 群：**945824082** 进行反馈、聊天或探讨 AI 绘画技巧！
@@ -71,7 +81,7 @@
 | `general.list_all_resources` | 是否允许普通用户查看并在绘图中使用其他用户的预设、图片图库和角色 Tag 库；关闭时只显示/使用本人资源（系统资源及管理员设置的默认预设除外）。 | ❌ 否 |
 | `request.proxy_url` | 画图接口（如 image.novelai.net）的代理地址。非海外机器必填。支持 `http://`、`https://`、`socks5://` 等。 | ❌ 否 |
 | `request.tokens` | **授权 Token 列表**。请使用官网获取的 `pst-` 开头的 Token，支持多 Token 轮询。 | ✅ 是 |
-| `request.opus_free_mode` | **Opus 免费模式**。开启后强制限制图片尺寸和步数，Opus 账号不扣点数。 | ❌ 否 |
+| `request.opus_free_mode` | 限制尺寸和步数至 Opus 免 Anlas 参数范围；不保证账号剩余额度或零扣点。 | ❌ 否 |
 | `llm.advanced_arg_generation_provider` | 用于将自然语言转换为绘图参数的 LLM 模型提供商。 | ❌ 否 |
 | `llm.enable_vision` | 是否启用视觉输入（需要模型支持 Vision），用于参考图分析。 | ❌ 否 |
 | `quota.enable_quota` | 是否启用额度/签到系统。 | ❌ 否 |

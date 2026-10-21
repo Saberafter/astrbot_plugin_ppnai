@@ -3,16 +3,16 @@ import hashlib
 import json
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any
 
 import pytest
 
 from src import manual_help
 
-
 ROOT = Path(__file__).resolve().parents[1]
 
 
-@pytest.mark.parametrize("message, topic", [
+@pytest.mark.parametrize(("message", "topic"), [
     ("/nai", "home"),
     ("nai", "home"),
     (" /NAI  ", "home"),
@@ -22,7 +22,7 @@ ROOT = Path(__file__).resolve().parents[1]
     ("/nai CS", "characters"),
     ("/nai 画图", "draw"),
 ])
-def test_exact_help_commands(message, topic):
+def test_exact_help_commands(message: str, topic: str):
     query = manual_help.help_query(message)
     assert query is not None
     assert manual_help.TOPICS[query.casefold()] == topic
@@ -36,7 +36,7 @@ def test_exact_help_commands(message, topic):
     "/nai 预设 tag=1girl",
     "/nai unknown-topic",
 ])
-def test_drawing_commands_are_not_consumed(message):
+def test_drawing_commands_are_not_consumed(message: str):
     assert manual_help.help_query(message) is None
 
 
@@ -46,36 +46,38 @@ def test_all_shipped_help_images_are_valid():
     assert set(manifest["images"]) == set(manual_help.ALIASES)
     for topic, image in manifest["images"].items():
         assert manual_help.verified_image(topic, image["sha256"]).startswith(b"\x89PNG")
-        assert (manual_help.ASSETS / f"{topic}.md").is_file()
+        markdown = (manual_help.ASSETS / f"{topic}.md").read_bytes().replace(b"\r\n", b"\n")
+        assert image["markdown_sha256"] == hashlib.sha256(markdown).hexdigest()
 
 
 class Event:
-    def plain_result(self, text):
+    def plain_result(self, text: str):
         return ("text", text)
 
-    def chain_result(self, components):
+    def chain_result(self, components: list):
         return ("image", components)
 
 
-def collect_help(plugin, event, query=""):
+def collect_help(plugin: Any, event: Event, query: str = ""):
     async def collect():
         return [item async for item in manual_help.handle_manual_help(plugin, event, query)]
 
     return asyncio.run(collect())
 
 
-def test_text_help_works_with_windows_line_endings(monkeypatch, tmp_path):
+def test_text_help_works_with_windows_line_endings(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     manual = tmp_path / "USAGE.md"
     source = manual_help.MANUAL_PATH.read_bytes().replace(b"\r\n", b"\n")
     manual.write_bytes(source.replace(b"\n", b"\r\n"))
     monkeypatch.setattr(manual_help, "MANUAL_PATH", manual)
     plugin = SimpleNamespace(config=SimpleNamespace(general=SimpleNamespace(help_t2i=False)))
     result = collect_help(plugin, Event())
-    assert result and all(item[0] == "text" for item in result)
+    assert result
+    assert all(item[0] == "text" for item in result)
     assert "暂时不可用" not in "".join(item[1] for item in result)
 
 
-def test_missing_image_falls_back_to_topic_text(monkeypatch, tmp_path):
+def test_missing_image_falls_back_to_topic_text(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     source = b"manual\n"
     manual = tmp_path / "USAGE.md"
     manual.write_bytes(source)
@@ -90,7 +92,7 @@ def test_missing_image_falls_back_to_topic_text(monkeypatch, tmp_path):
     assert collect_help(plugin, Event()) == [("text", "Topic text")]
 
 
-def test_stale_manual_links_to_fork(monkeypatch, tmp_path):
+def test_stale_manual_links_to_fork(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     manual = tmp_path / "USAGE.md"
     manual.write_text("changed", encoding="utf-8")
     monkeypatch.setattr(manual_help, "MANUAL_PATH", manual)

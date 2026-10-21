@@ -1,103 +1,6 @@
 {
-  "source_sha256": "41e186db2d30029b25e6046e5f3b41165ffc8bc4edcdb319a76c14f2b932c862",
-  "source_lines": 681,
-  "chunks": [
-    {
-      "topic": "draw",
-      "start_line": 1,
-      "end_line": 18
-    },
-    {
-      "topic": "draw",
-      "start_line": 19,
-      "end_line": 38
-    },
-    {
-      "topic": "presets",
-      "start_line": 39,
-      "end_line": 173
-    },
-    {
-      "topic": "characters",
-      "start_line": 174,
-      "end_line": 226
-    },
-    {
-      "topic": "draw",
-      "start_line": 227,
-      "end_line": 257
-    },
-    {
-      "topic": "vision",
-      "start_line": 258,
-      "end_line": 271
-    },
-    {
-      "topic": "auto",
-      "start_line": 272,
-      "end_line": 303
-    },
-    {
-      "topic": "gallery",
-      "start_line": 304,
-      "end_line": 360
-    },
-    {
-      "topic": "quota",
-      "start_line": 361,
-      "end_line": 392
-    },
-    {
-      "topic": "quota",
-      "start_line": 393,
-      "end_line": 407
-    },
-    {
-      "topic": "admin",
-      "start_line": 408,
-      "end_line": 432
-    },
-    {
-      "topic": "vision",
-      "start_line": 433,
-      "end_line": 466
-    },
-    {
-      "topic": "output",
-      "start_line": 467,
-      "end_line": 518
-    },
-    {
-      "topic": "curtain",
-      "start_line": 519,
-      "end_line": 536
-    },
-    {
-      "topic": "quota",
-      "start_line": 537,
-      "end_line": 547
-    },
-    {
-      "topic": "output",
-      "start_line": 548,
-      "end_line": 563
-    },
-    {
-      "topic": "params",
-      "start_line": 564,
-      "end_line": 576
-    },
-    {
-      "topic": "params",
-      "start_line": 577,
-      "end_line": 605
-    },
-    {
-      "topic": "params",
-      "start_line": 606,
-      "end_line": 681
-    }
-  ],
+  "source_sha256": "6b630a30fd97776cefaa5eab1859e41128dac0a214b8ab3eb8015d2964cca4e4",
+  "source_lines": 692,
   "images": {
     "home": {
       "size": [
@@ -105,7 +8,8 @@
         1760
       ],
       "bytes": 298496,
-      "sha256": "932d2bce156bbe689745548f6a00fcd08c1cdc0bd23e657dc7f0f6ddf919ee3f"
+      "sha256": "932d2bce156bbe689745548f6a00fcd08c1cdc0bd23e657dc7f0f6ddf919ee3f",
+      "markdown_sha256": "cd25cafd00b6e42d2c24ab2261b79f44d9483b8ed7368c4ee7b987afd87377e1"
     },
     "draw": {
       "size": [
@@ -113,15 +17,18 @@
         2466
       ],
       "bytes": 464836,
-      "sha256": "9ce3d1025c2950d1810ab324877a5c0cbdc38aea77c11bf2018107626ba5ed5a"
+      "sha256": "9ce3d1025c2950d1810ab324877a5c0cbdc38aea77c11bf2018107626ba5ed5a",
+      "markdown_sha256": "544953542414c442edcedf53ff3b8442417fc9d00449acb88dc58fad5fa43d3c"
     },
     "params": {
       "size": [
         1058,
-        5575
+        5926
       ],
-      "bytes": 1017581,
-      "sha256": "8396369cb4f37170feb4d92f317828ab0a42e3ccdcd8b1d63a5277bb6e989628"
+      "bytes": 1081927,
+      "sha256": "3fe806b226d5eaf35c4c49d50d9f73f94fdc6f430d94d2a97308fd42a907cc43",
+      "markdown_sha256": "557cd7d2476b22da121e567484b019d0ccb6b840595e0ec3c0436c12d04da54f",
+      "renderer": "pillowmd 0.7.3, Pillow 13.0.0, autoPage=False"
     },
     "presets": {
       "size": [
@@ -129,7 +36,8 @@
         4441
       ],
       "bytes": 842664,
-      "sha256": "bcda767b8240e8a06ec20779f53b1c959ac27395e877a35232db4d938025b38c"
+      "sha256": "bcda767b8240e8a06ec20779f53b1c959ac27395e877a35232db4d938025b38c",
+      "markdown_sha256": "b4a6f70f84a1aad88ff2952beeaf8073feb21a5d90521097ff6bb62746a01ac5"
     },
     "characters": {
       "size": [
@@ -137,7 +45,8 @@
         1931
       ],
       "bytes": 400415,
-      "sha256": "5d9e316426669016287dec6b2b13c526525faa7544280198b8d674b7cc966580"
+      "sha256": "5d9e316426669016287dec6b2b13c526525faa7544280198b8d674b7cc966580",
+      "markdown_sha256": "312811226e8da089404c7e9eb921f2889580dc5f35f1ed7b0dad7d29a5f77a5e"
     },
     "vision": {
       "size": [
@@ -145,7 +54,8 @@
         1776
       ],
       "bytes": 350934,
-      "sha256": "a276910579ab196da9e9adb39a348cd37d5e76befd9e7fd969da84b2dbd0e35f"
+      "sha256": "a276910579ab196da9e9adb39a348cd37d5e76befd9e7fd969da84b2dbd0e35f",
+      "markdown_sha256": "46486aa3170da0024d778e405c1ae15fbdc813393a1568a1a09e9849c469300c"
     },
     "auto": {
       "size": [
@@ -153,7 +63,8 @@
         1361
       ],
       "bytes": 204357,
-      "sha256": "d58cb2905dbecc67d0bb06a803fc4e837149cc099888a7c12281e7df03a9abb7"
+      "sha256": "d58cb2905dbecc67d0bb06a803fc4e837149cc099888a7c12281e7df03a9abb7",
+      "markdown_sha256": "eb29ad391e31da01f8a08631232a284623d47d0fc4663f57725f60c1afccf1c9"
     },
     "gallery": {
       "size": [
@@ -161,7 +72,8 @@
         1926
       ],
       "bytes": 328878,
-      "sha256": "06d6fd9e937a5a0caeb3444ce87e1cdecc2fb0267b087bef24fb2e130344d649"
+      "sha256": "06d6fd9e937a5a0caeb3444ce87e1cdecc2fb0267b087bef24fb2e130344d649",
+      "markdown_sha256": "7554ca1f407f888fdf3ce521595e97c1b48ada17e6befc34fad96b8e56a8ff26"
     },
     "quota": {
       "size": [
@@ -169,7 +81,8 @@
         2036
       ],
       "bytes": 299179,
-      "sha256": "f5d2f2c5195a7459985c993823ab7d453afe74ec9f51e1501c13bca6bfc9e8dd"
+      "sha256": "f5d2f2c5195a7459985c993823ab7d453afe74ec9f51e1501c13bca6bfc9e8dd",
+      "markdown_sha256": "9d4ddb0175c9215e716e725e3b6543d478f9d429b8dc4c7591ec5a8963c93a56"
     },
     "output": {
       "size": [
@@ -177,7 +90,8 @@
         2501
       ],
       "bytes": 637544,
-      "sha256": "4899852fd12627c187c2c6dc3fc272e3746aba5911506401959e4e804bc70dd4"
+      "sha256": "4899852fd12627c187c2c6dc3fc272e3746aba5911506401959e4e804bc70dd4",
+      "markdown_sha256": "60af7406db679b816da3fd78124f58f72525d6c43973fb6db663cb824855654c"
     },
     "curtain": {
       "size": [
@@ -185,7 +99,8 @@
         751
       ],
       "bytes": 110208,
-      "sha256": "190723cce36959a2b8553d4604917fc90c51b0586e6d1bc42b0a74a29bb9a552"
+      "sha256": "190723cce36959a2b8553d4604917fc90c51b0586e6d1bc42b0a74a29bb9a552",
+      "markdown_sha256": "6ff6295f070903791834978dc7cc6c509c7222774d4ee2eadbd49d6b4e9ddc5b"
     },
     "admin": {
       "size": [
@@ -193,7 +108,8 @@
         1041
       ],
       "bytes": 109003,
-      "sha256": "33876fcc3bd69ebbdb43f5f95740883448f562e3c4d0112398f8668c7506bdba"
+      "sha256": "33876fcc3bd69ebbdb43f5f95740883448f562e3c4d0112398f8668c7506bdba",
+      "markdown_sha256": "ca1e2928a05c82e94f5e4c2c0756c1c83a4979ad2f76dbf92fffd65afc72ac37"
     }
   },
   "renderer": "upstream pillowmd 0.7.3 default, Pillow 12.0.0, autoPage=False"

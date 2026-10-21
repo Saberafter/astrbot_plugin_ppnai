@@ -1,6 +1,7 @@
 from collections.abc import Iterable
 from datetime import datetime
 from typing import Annotated, Literal, TypeAlias
+from typing_extensions import Self
 
 from cookit import camel_case
 from cookit.pyd import model_with_model_config
@@ -11,6 +12,14 @@ from pydantic import (
     ConfigDict,
     Field,
     RootModel,
+    model_validator,
+)
+
+NAI5_MEDIUM_MODEL = "nai-diffusion-5-full-medium"
+NAI5_MEDIUM_NEGATIVE = (
+    "lowres, artistic error, film grain, scan artifacts, worst quality, bad quality, "
+    "jpeg artifacts, very displeasing, chromatic aberration, dithering, halftone, "
+    "screentone, multiple views, logo, too many watermarks, negative space, blank page"
 )
 
 AVAILABLE_MODELS = [
@@ -21,6 +30,7 @@ AVAILABLE_MODELS = [
     "nai-diffusion-4-5-curated",
     "nai-diffusion-4-5-full",
     "nai-diffusion-5-full",
+    NAI5_MEDIUM_MODEL,
     "nai-diffusion-5-curated",
 ]
 AVAILABLE_SAMPLERS = [
@@ -203,6 +213,16 @@ class Req(BaseModel):
     ch: bool = False
     nocache: int = 1
     stream: int = 1
+
+    @model_validator(mode="after")
+    def apply_model_constraints(self) -> Self:
+        if self.model == NAI5_MEDIUM_MODEL:
+            self.steps = "14"
+            self.sampler = "k_euler_ancestral"
+            self.cfg = "0"
+            self.other = "0"
+            self.negative = NAI5_MEDIUM_NEGATIVE
+        return self
 
 
 class Resp(BaseModel):

@@ -1,4 +1,16 @@
 # CHANGELOG
+
+## v1.7.1（Saberafter fork，2026-10-21）
+
+- 迁入 VPS 上已有的分主题帮助，保留 `/nai` 总览、功能分支和 `/nai帮助`。
+- 删除未使用的快速帮助模块、旧整页帮助图片和调试回执。
+- 新增 `nai-diffusion-5-full-medium`，支持 `nai5_medium`、`nai5_full_medium` 简写。
+- Medium 固定使用 14 步、Euler Ancestral、官方 Heavy 负面预设，关闭 CFG Rescale 与 SMEA；
+  校验入口和最终请求边界均应用限制，其他模型与现有默认配置保持不变。
+- 更新参数帮助文案和图片，增加本机帮助资源重建脚本。
+- 增加离线回归测试、开发部署说明和运行数据忽略规则。
+- 仅完成离线验证；未在生产环境切换模型，未调用真实付费生成接口。
+
 ## v1.6.9
 
 - 将 CS 从 AI 生成的角色外貌档案改为 NovelAI 角色 Tag 库，新增 `cs添加`，并更新 `cs`、`dcs`、`scs`、`ccs` 的管理用法。

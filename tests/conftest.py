@@ -5,7 +5,6 @@ import logging
 import sys
 from types import ModuleType
 
-
 if importlib.util.find_spec("astrbot") is None:
     astrbot = ModuleType("astrbot")
     api = ModuleType("astrbot.api")
@@ -17,13 +16,13 @@ if importlib.util.find_spec("astrbot") is None:
 
     class Image(BaseMessageComponent):
         @classmethod
-        def fromBytes(cls, data):
+        def fromBytes(cls, data: bytes):  # noqa: N802 - AstrBot public API spelling.
             image = cls()
             image.data = data
             return image
 
     class Reply(BaseMessageComponent):
-        def __init__(self, chain=None):
+        def __init__(self, chain: list | None = None):
             self.chain = chain or []
 
     components.BaseMessageComponent = BaseMessageComponent

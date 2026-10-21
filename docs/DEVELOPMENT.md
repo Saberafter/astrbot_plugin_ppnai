@@ -29,6 +29,16 @@ uv pip install --python .venv/Scripts/python.exe -r requirements.txt -r requirem
 - `docs/USAGE.md`：完整使用文档。
 
 主题帮助不再依赖旧快速帮助模块或旧整页帮助图片。
+修改完整文档时，同步修改相关主题的 `.md`，然后只重建受影响的主题：
+
+```powershell
+.venv/Scripts/python.exe scripts/build_help_assets.py --topic params
+```
+
+不指定 `--topic` 会重建全部主题。提交对应文案、PNG 和 `manifest.json`，
+测试会校验完整文档、主题文案和图片的哈希。渲染器只在本机开发时运行，
+生产环境仍使用静态帮助图片。
+
 不要把运行配置、用户数据、Token、Cookie 或生成记录放入仓库。
 
 ## 从 GitHub 更新 VPS
@@ -37,12 +47,15 @@ uv pip install --python .venv/Scripts/python.exe -r requirements.txt -r requirem
 
 1. 备份当前插件源码，并记录可回滚的提交。
 2. 保留外部的插件配置和 `plugin_data`，不要覆盖或删除它们。
-3. 将插件代码来源切换到本 fork，并确认 Git 的 `origin` 也指向本 fork。
+3. 在 AstrBot 的插件安装或更新流程中，将来源指定为本 fork。
 4. 安装或核对依赖，重载插件，检查日志和帮助命令。
 
-之后可由 AstrBot 的插件更新功能或受控的 Git 拉取更新代码，再重载插件。
-更新前应检查工作目录有无未提交改动；不要用强制重置覆盖本地修改。
-仅修改 `metadata.yaml` 的仓库地址，不等于已经把旧安装目录切换成 Git 仓库。
+之后可由 AstrBot 的插件更新功能更新代码并重载。当前 VPS 上的 AstrBot
+更新器会按仓库下载和替换插件，而且安装时会移除 Git 元数据，因此生产目录没有
+`.git` 是正常情况，不需要把它改成 Git 工作区。
+更新器默认使用插件元数据中的 `repo`，但调用方传入的仓库或下载源可覆盖它。
+更新前务必核对面板选中的仓库，避免又从上游市场源覆盖本 fork。
+不要直接在生产目录修改源码；更新操作会替换该目录，本地改动应先迁回开发仓库。
 
 ## 同步上游
 

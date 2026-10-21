@@ -21,7 +21,7 @@ from httpx import AsyncClient, Timeout
 from astrbot.api import logger
 
 from .config import Config
-from .models import Req
+from .models import NAI5_MEDIUM_MODEL, Req
 from .image_history_cache import ImageHistoryCache
 
 from .text_sanitize import shorten_base64_segments
@@ -279,6 +279,9 @@ def _convert_req_to_official_format(req: Req, opus_free_mode: bool = False) -> d
         req: 请求对象
         opus_free_mode: 是否开启 Opus 免费模式（小图模式）
     """
+    # LLM/explicit overrides can mutate a validated Req before it reaches the API.
+    req.apply_model_constraints()
+
     # 解析尺寸
     width, height = [int(x) for x in req.size.split("x")]
     
@@ -315,7 +318,7 @@ def _convert_req_to_official_format(req: Req, opus_free_mode: bool = False) -> d
     # 注意：NovelAI v4 模型需要 v4_prompt 和 v4_negative_prompt 参数
     parameters: dict[str, Any] = {
         # 基础参数
-        "params_version": 3,
+        "params_version": 4 if req.model == NAI5_MEDIUM_MODEL else 3,
         "width": width,
         "height": height,
         "steps": steps,
@@ -328,7 +331,7 @@ def _convert_req_to_official_format(req: Req, opus_free_mode: bool = False) -> d
         "sm": sm,
         "sm_dyn": sm_dyn,
         "n_samples": 1,
-        "ucPreset": 0,  # 使用自定义负面提示词
+        "ucPreset": 2 if req.model == NAI5_MEDIUM_MODEL else 0,
         "qualityToggle": False,  # 关闭质量切换（已在提示词中处理）
         # v4 模型必需参数
         "dynamic_thresholding": False,
