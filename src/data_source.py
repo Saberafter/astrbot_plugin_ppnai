@@ -13,6 +13,7 @@ import random
 import time
 import zipfile
 from collections.abc import Awaitable, Callable
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -84,6 +85,12 @@ class GenerateError(Exception):
 
     def __str__(self) -> str:
         return f"{self.message} (status={self.status_code})"
+
+
+@dataclass(frozen=True)
+class GeneratedImage:
+    image: bytes
+    seed: int
 
 
 class VibeCacheManager:
@@ -504,7 +511,7 @@ async def generate_image(
     vibe_cache: VibeCacheManager | None = None,
     image_cache: ImageHistoryCache | None = None,
     owner_id: str = "system",
-) -> bytes:
+) -> GeneratedImage:
     """
     调用官方 NovelAI API 生成图片
     
@@ -514,7 +521,7 @@ async def generate_image(
         opus_free_mode: 是否开启 Opus 免费模式
     
     Returns:
-        生成的图片字节数据
+        图片字节和本次成功请求实际发送的种子
     """
     # 转换请求格式
     request_body = _convert_req_to_official_format(req, opus_free_mode=opus_free_mode)
@@ -605,7 +612,8 @@ async def generate_image(
                 image_filename = file_list[0]
                 return zf.read(image_filename)
 
-        return await asyncio.to_thread(_extract_image_from_zip, response.content)
+        image = await asyncio.to_thread(_extract_image_from_zip, response.content)
+        return GeneratedImage(image=image, seed=parameters["seed"])
     except zipfile.BadZipFile as e:
         logger.error(f"[nai] 无法解析返回的 ZIP 文件: {e}")
         raise GenerateError("返回的数据不是有效的 ZIP 文件") from e
@@ -620,7 +628,7 @@ async def wrapped_generate(
     vibe_cache: VibeCacheManager | None = None,
     image_cache: ImageHistoryCache | None = None,
     owner_id: str = "system",
-) -> bytes:
+) -> GeneratedImage:
     """生成图片
     
     Args:
@@ -629,7 +637,7 @@ async def wrapped_generate(
         token: 使用的 Token（Bearer Token）
     
     Returns:
-        生成的图片字节数据
+        图片字节和本次成功请求实际发送的种子
     """
     start_time = time.time_ns()
     opus_free_mode = config.request.opus_free_mode
@@ -667,7 +675,7 @@ async def wrapped_generate(
     if image_cache is not None:
         try:
             await asyncio.to_thread(
-                image_cache.put_bytes, "generations", image, owner_id
+                image_cache.put_bytes, "generations", image.image, owner_id
             )
         except Exception:  # noqa: BLE001
             # The image has already been generated; a cache disk failure must not discard it.

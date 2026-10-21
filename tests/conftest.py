@@ -25,9 +25,14 @@ if importlib.util.find_spec("astrbot") is None:
         def __init__(self, chain: list | None = None):
             self.chain = chain or []
 
+    class Plain(BaseMessageComponent):
+        def __init__(self, text: str):
+            self.text = text
+
     components.BaseMessageComponent = BaseMessageComponent
     components.Image = Image
     components.Reply = Reply
+    components.Plain = Plain
     api.message_components = components
     astrbot.api = api
     sys.modules.update({

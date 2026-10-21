@@ -122,7 +122,7 @@ def test_generation_round_trip_without_network_or_credentials():
         ) as client:
             return await generate_image(client, Req(model=NAI5_MEDIUM_MODEL, tag="test"))
 
-    assert asyncio.run(run()) == output
+    assert asyncio.run(run()).image == output
     assert len(calls) == 1
 
 

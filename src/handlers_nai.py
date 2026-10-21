@@ -17,7 +17,7 @@ from .data_source import GenerateError, wrapped_generate
 from .image_params import iter_key_values, resolve_image_params
 from .llm import ReturnToLLMError, llm_generate_advanced_req
 from .llm_utils import format_readable_error
-from .generation_report import format_generation_report, get_input_image_bytes
+from .generation_report import build_image_output, format_generation_report, get_input_image_bytes
 from .params import _collect_images_with_replies, parse_req
 from .handlers_shared import (
     apply_explicit_overrides,
@@ -339,6 +339,7 @@ async def handle_nai_draw(plugin, event, waiting_replies: list[str]) -> AsyncIte
             try:
                 async with acquire_generation_semaphore(plugin):
                     images: list[bytes] = []
+                    seeds: list[int] = []
                     last_req = None
                     for _ in range(batch_count):
                         req = await llm_generate_advanced_req(
@@ -374,10 +375,12 @@ async def handle_nai_draw(plugin, event, waiting_replies: list[str]) -> AsyncIte
                                 image_cache=plugin.image_history_cache,
                                 owner_id=event.get_sender_id(),
                             )
-                            plugin._create_background_task(record_generation(plugin, token_index=token_index, token=token, req=req, user_id=event.get_sender_id(), sender_name=event.get_sender_name(), session=event.unified_msg_origin, outcome="success", balance_before=balance_before, batch_count=batch_count), name="nai:anlas_audit")
+                            plugin._create_background_task(record_generation(plugin, token_index=token_index, token=token, req=req, user_id=event.get_sender_id(), sender_name=event.get_sender_name(), session=event.unified_msg_origin, outcome="success", balance_before=balance_before, batch_count=batch_count, seed=image.seed), name="nai:anlas_audit")
                             return image
 
-                        images.append(await plugin._run_with_retry(_do_generate))
+                        generated = await plugin._run_with_retry(_do_generate)
+                        images.append(generated.image)
+                        seeds.append(generated.seed)
                         last_req = req
 
                 if images and resource_keys:
@@ -395,13 +398,14 @@ async def handle_nai_draw(plugin, event, waiting_replies: list[str]) -> AsyncIte
                     user_id, len(images), event.get_sender_name()
                 )
                 optional_content = await _build_optional_output_content(plugin, event, images)
-                merged_content = [Image.fromBytes(img) for img in images] + optional_content
+                image_content = build_image_output(images, seeds)
+                merged_content = image_content + optional_content
                 report_content = None
                 if last_req is not None and (
                     plugin.config.general.send_generation_details
                     or last_req.data is True
                 ):
-                    report_content = [Plain(format_generation_report(raw_input, last_req))]
+                    report_content = [Plain(format_generation_report(raw_input, last_req, seeds=seeds))]
                     report_content.extend(
                         Image.fromBytes(image)
                         for image in get_input_image_bytes(last_req)
@@ -420,7 +424,7 @@ async def handle_nai_draw(plugin, event, waiting_replies: list[str]) -> AsyncIte
                     )
                     yield event.chain_result([nodes])
                 else:
-                    yield event.chain_result([Image.fromBytes(img) for img in images])
+                    yield event.chain_result(image_content)
                     if optional_content:
                         yield event.chain_result(optional_content)
                 reaction_result = build_draw_reaction_result(plugin, event)
@@ -552,12 +556,15 @@ async def handle_cmd_nai(plugin, event, waiting_replies: list[str]) -> AsyncIter
                             image_cache=plugin.image_history_cache,
                             owner_id=event.get_sender_id(),
                         )
-                        plugin._create_background_task(record_generation(plugin, token_index=token_index, token=token, req=req, user_id=event.get_sender_id(), sender_name=event.get_sender_name(), session=event.unified_msg_origin, outcome="success", balance_before=balance_before, batch_count=batch_count), name="nai:anlas_audit")
+                        plugin._create_background_task(record_generation(plugin, token_index=token_index, token=token, req=req, user_id=event.get_sender_id(), sender_name=event.get_sender_name(), session=event.unified_msg_origin, outcome="success", balance_before=balance_before, batch_count=batch_count, seed=image.seed), name="nai:anlas_audit")
                         return image
 
                     images: list[bytes] = []
+                    seeds: list[int] = []
                     for _ in range(batch_count):
-                        images.append(await plugin._run_with_retry(_do_generate))
+                        generated = await plugin._run_with_retry(_do_generate)
+                        images.append(generated.image)
+                        seeds.append(generated.seed)
 
                 if images and resource_keys:
                     try:
@@ -574,12 +581,13 @@ async def handle_cmd_nai(plugin, event, waiting_replies: list[str]) -> AsyncIter
                     user_id, len(images), event.get_sender_name()
                 )
                 optional_content = await _build_optional_output_content(plugin, event, images)
-                merged_content = [Image.fromBytes(img) for img in images] + optional_content
+                image_content = build_image_output(images, seeds)
+                merged_content = image_content + optional_content
                 report_content = None
                 if plugin.config.general.send_generation_details or req.data is True:
                     report_content = [
                         Plain(format_generation_report(
-                            event.message_str.removeprefix("nai").strip(), req
+                            event.message_str.removeprefix("nai").strip(), req, seeds=seeds
                         ))
                     ]
                     report_content.extend(
@@ -599,7 +607,7 @@ async def handle_cmd_nai(plugin, event, waiting_replies: list[str]) -> AsyncIter
                     ])
                     yield event.chain_result([nodes])
                 else:
-                    yield event.chain_result([Image.fromBytes(img) for img in images])
+                    yield event.chain_result(image_content)
                     if optional_content:
                         yield event.chain_result(optional_content)
                 reaction_result = build_draw_reaction_result(plugin, event)

@@ -62,7 +62,7 @@ def _append(entry: dict[str, Any]) -> None:
         stream.write(json.dumps(entry, ensure_ascii=False, separators=(",", ":")) + "\n")
 
 
-async def record_generation(plugin, *, token_index: int, token: str, req, user_id: str, sender_name: str, session: str, outcome: str, balance_before: dict[str, Any] | None, batch_count: int = 1) -> None:
+async def record_generation(plugin, *, token_index: int, token: str, req, user_id: str, sender_name: str, session: str, outcome: str, balance_before: dict[str, Any] | None, batch_count: int = 1, seed: int | None = None) -> None:
     await asyncio.sleep(1.5)
     after = await read_balance(plugin, token)
     fixed_delta = None
@@ -73,6 +73,7 @@ async def record_generation(plugin, *, token_index: int, token: str, req, user_i
         if isinstance(balance_before.get("purchased"), int) and isinstance(after.get("purchased"), int):
             purchased_delta = balance_before["purchased"] - after["purchased"]
     entry = {"at": datetime.now().astimezone().isoformat(timespec="seconds"), "token_index": token_index, "user_id": str(user_id), "sender_name": str(sender_name), "session": str(session), "outcome": outcome, "model": str(req.model), "size": str(req.size), "steps": str(req.steps), "sampler": str(req.sampler), "i2i": bool(getattr(req.addition, "i2i", None)), "batch_count": batch_count, "official_rule": official_rule(req, balance_before.get("tier") if balance_before else None, batch_count), "balance_before": balance_before, "balance_after": after, "actual_fixed_anlas_delta": fixed_delta, "actual_purchased_anlas_delta": purchased_delta}
+    entry["seed"] = seed
     await asyncio.to_thread(_append, entry)
 
 

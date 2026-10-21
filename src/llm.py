@@ -209,7 +209,7 @@ async def llm_generate_image(
     )
 
     try:
-        return await wrapped_generate(
+        result = await wrapped_generate(
             req,
             config,
             token=token,
@@ -218,6 +218,7 @@ async def llm_generate_image(
             image_cache=image_cache,
             owner_id=event.get_sender_id(),
         )
+        return result.image
     except Exception as e:
         logger.debug("Failed to generate image", exc_info=e)
         raise ReturnToLLMError(

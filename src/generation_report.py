@@ -3,10 +3,29 @@
 import base64
 import binascii
 
+from astrbot.api.message_components import Image, Plain
+
 from .models import Req
 
 
-def format_generation_report(raw_input: str, req: Req) -> str:
+def build_image_output(images: list[bytes], seeds: list[int]) -> list[Image | Plain]:
+    content = []
+    for image, seed in zip(images, seeds, strict=True):
+        content.extend([Image.fromBytes(image), Plain(f"\nseed={seed}\n")])
+    return content
+
+
+def format_generation_report(
+    raw_input: str, req: Req, *, seeds: list[int] | None = None,
+) -> str:
+    if seeds:
+        seed_lines = (
+            [f"seed={seeds[0]}"]
+            if len(seeds) == 1
+            else [f"seed[{index}]={seed}" for index, seed in enumerate(seeds, 1)]
+        )
+    else:
+        seed_lines = [f"seed={req.seed or '(random)'}"]
     params = [
         f"model={req.model}",
         f"artist={req.artist or '(none)'}",
@@ -16,7 +35,7 @@ def format_generation_report(raw_input: str, req: Req) -> str:
         f"cfg={req.cfg}",
         f"sampler={req.sampler}",
         f"noise_schedule={req.noise_schedule}",
-        f"seed={req.seed or '(random)'}",
+        *seed_lines,
         f"other={req.other}",
         f"i2i_force={req.i2i_force}",
         f"i2i_cl={req.i2i_cl}",
