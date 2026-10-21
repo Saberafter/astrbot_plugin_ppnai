@@ -15,8 +15,7 @@ ROOT = Path(__file__).resolve().parent.parent
 MANUAL_PATH = ROOT / "docs" / "USAGE.md"
 ASSETS = ROOT / "docs" / "branch_help_assets"
 DOC_URL = (
-    "https://github.com/dafeiwu666/astrbot_plugin_ppnai/blob/"
-    "3fba81326ef789e4ec38cd2a20d589efca5b68f3/docs/USAGE.md"
+    "https://github.com/Saberafter/astrbot_plugin_ppnai/blob/main/docs/USAGE.md"
 )
 
 
@@ -61,13 +60,13 @@ def verified_image(topic, digest):
     return data
 
 
-async def handle_manual_help(plugin, event, query="", include_index=False):
+async def handle_manual_help(plugin, event, query=""):
     topic = TOPICS.get(query.strip().casefold())
     if topic is None:
         yield event.plain_result("没有这个帮助分支。发送 /nai 查看功能总览，例如 /nai 预设、/nai 识图。")
         return
     try:
-        source = await asyncio.to_thread(MANUAL_PATH.read_bytes)
+        source = (await asyncio.to_thread(MANUAL_PATH.read_bytes)).replace(b"\r\n", b"\n")
         manifest = await asyncio.to_thread(verified_manifest, hashlib.sha256(source).hexdigest())
         if plugin.config.general.help_t2i:
             try:

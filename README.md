@@ -1,3 +1,11 @@
+## Saberafter 维护分支
+
+本仓库 fork 自 [dafeiwu666/astrbot_plugin_ppnai](https://github.com/dafeiwu666/astrbot_plugin_ppnai)，保留上游作者与 MIT 许可证。
+本分支维护分主题帮助及后续模型适配，已移除未使用的快速帮助和旧整页帮助资源。
+
+本机开发、测试后推送 GitHub；VPS 更新需要主动拉取并重载插件，不会在推送时自动更新。
+开发与部署说明见 [DEVELOPMENT.md](docs/DEVELOPMENT.md)。
+
 ## 📖 简介
 发送**/nai**查看帮助
 本插件为 AstrBot 带来了强大的 **NovelAI** 绘图能力。它不仅仅是一个简单的 API 调用工具，还集成了 **LLM 辅助生图**、**自动绘图**、**额度管理**、**队列系统**以及 NovelAI 的高级功能（如氛围转移 Vibe Transfer、角色保持 Character Keep）。

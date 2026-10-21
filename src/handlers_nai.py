@@ -484,7 +484,7 @@ async def handle_cmd_nai(plugin, event, waiting_replies: list[str]) -> AsyncIter
         return
 
     if parsed is None:
-        async for result in handle_manual_help(plugin, event, include_index=True):
+        async for result in handle_manual_help(plugin, event):
             yield result
         return
 
