@@ -92,6 +92,7 @@ from .src.image_library import ImageLibraryManager, LibraryImage
 from .src.image_history_cache import ImageHistoryCache
 from .src.queue_manager import get_shared_queue
 from .src.handlers_nai import handle_cmd_nai, handle_nai_draw
+from .src.manual_help import handle_manual_help, help_query
 from .src.curtain import CurtainStore
 from .src.quark import announce_quark_login, quark_cleanup_loop
 try:
@@ -1651,9 +1652,21 @@ class Plugin(Star):
 
     # ========== 画图命令 ==========
 
+    @event_filter.command("nai帮助")
+    async def cmd_nai_help(self, event: AstrMessageEvent):
+        """查看功能总览或指定功能分支。"""
+        query = event.message_str.strip().lstrip("/").removeprefix("nai帮助").strip()
+        async for result in handle_manual_help(self, event, query):
+            yield result
+
     @event_filter.command(COMMAND)
     async def cmd_nai(self, event: AstrMessageEvent):
-        """泡泡画图"""
+        """泡泡画图；空指令显示总览，功能名显示对应帮助。"""
+        query = help_query(event.message_str)
+        if query is not None:
+            async for result in handle_manual_help(self, event, query):
+                yield result
+            return
         async for result in handle_cmd_nai(self, event, WAITING_REPLIES):
             yield result
 

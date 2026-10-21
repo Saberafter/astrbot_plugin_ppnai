@@ -30,6 +30,7 @@ from .qr_code import build_qr_image
 from .sharebin import upload_images_to_sharebin
 from .quark import build_quark_result, upload_images_to_quark
 from .anlas_audit import read_balance, record_generation
+from .manual_help import handle_manual_help
 
 
 _LAST_REACTION_AT = 0.0
@@ -483,19 +484,8 @@ async def handle_cmd_nai(plugin, event, waiting_replies: list[str]) -> AsyncIter
         return
 
     if parsed is None:
-        help_msg = await plugin.generate_help(event.unified_msg_origin)
-        if plugin.config.general.help_t2i:
-            try:
-                pages = await plugin._render_markdown_to_images(help_msg)
-                if pages:
-                    yield event.chain_result([Image.fromBytes(b) for b in pages])
-                else:
-                    yield event.plain_result(help_msg)
-            except Exception:
-                logger.exception("帮助图片渲染失败")
-                yield event.plain_result(help_msg)
-        else:
-            yield event.plain_result(help_msg)
+        async for result in handle_manual_help(plugin, event, include_index=True):
+            yield result
         return
 
     req, batch_count, preset_names, cs_names, cs_resource_keys = parsed
