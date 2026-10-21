@@ -568,23 +568,23 @@ Vibe 输入原图缓存只保存输入图片用于排查，不会替代或绕过
 - `nai-diffusion-4-full` `nai4_full` - NAI4 完整版
 - `nai-diffusion-4-curated-preview` `nai4_c_p` - NAI4 精选预览版
 - `nai-diffusion-4-5-curated` `nai4.5_c` - NAI4.5 精选版
-- `nai-diffusion-4-5-full` `nai45f` - NAI4.5 完整版
-- `nai-diffusion-5-full` `nai5f` - NAI5 完整版
-- `nai-diffusion-5-full-medium` `nai5m` - NAI5 Medium
+- `nai-diffusion-4-5-full` `45f` - NAI4.5 完整版
+- `nai-diffusion-5-full` `5f` - NAI5 完整版
+- `nai-diffusion-5-full-medium` `5m` - NAI5 Medium
 - `nai-diffusion-5-curated` `nai5_c` - NAI5 精选版
 
 Medium 固定使用 14 步、Euler Ancestral、官方 Heavy 负面预设，
 CFG Rescale 为 0，SMEA 关闭。上述固定设置优先于默认值、预设和单次参数；
 其他模型不受影响。
 
-在绘图消息中添加 `model=nai5m`、`model=nai5f` 或 `model=nai45f`，
+在绘图消息中单独一行添加 `model=5m`、`model=5f` 或 `model=45f`，
 仅切换本次请求，不修改面板默认模型；下一次不写 `model=` 时仍按默认值或预设。
-完整模型名称和旧简写 `nai5_medium`、`nai5_full_medium`、`nai5_full`、
-`nai4.5_full` 继续支持。
+开头仍保留 `/nai`。完整模型名称和旧简写 `nai5m`、`nai5f`、`nai45f`、
+`nai5_medium`、`nai5_full_medium`、`nai5_full`、`nai4.5_full` 继续支持。
 
 ```
 /nai
-model=nai5m
+model=5m
 tag=1girl, outdoors, smile
 ```
 

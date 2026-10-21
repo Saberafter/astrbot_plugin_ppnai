@@ -9,6 +9,9 @@ from src.models import NAI5_MEDIUM_MODEL
 from src.params import parse_req
 
 SHORT_MODELS = [
+    ("5m", NAI5_MEDIUM_MODEL, 14),
+    ("5f", "nai-diffusion-5-full", 23),
+    ("45f", "nai-diffusion-4-5-full", 23),
     ("nai5m", NAI5_MEDIUM_MODEL, 14),
     ("nai5f", "nai-diffusion-5-full", 23),
     ("nai45f", "nai-diffusion-4-5-full", 23),
@@ -53,8 +56,9 @@ def test_direct_short_alias_overrides_preset_model(alias: str, model: str, steps
     assert req.tag == "preset"
 
 
-def test_short_alias_preserves_model_permission():
+@pytest.mark.parametrize("alias", [alias for alias, _, _ in SHORT_MODELS])
+def test_short_alias_preserves_model_permission(alias: str):
     config = Config()
     config.permission.whitelist_only_fields = ["model"]
     with pytest.raises(ValueError, match="白名单"):
-        asyncio.run(parse_req("model=nai5m\ntag=test", [], config))
+        asyncio.run(parse_req(f"model={alias}\ntag=test", [], config))
