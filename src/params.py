@@ -290,8 +290,11 @@ MODEL_ALIAS_MAP = {
     "nai4_full": "nai-diffusion-4-full",
     "nai4_c_p": "nai-diffusion-4-curated-preview",
     "nai4.5_c": "nai-diffusion-4-5-curated",
+    "nai45f": "nai-diffusion-4-5-full",
     "nai4.5_full": "nai-diffusion-4-5-full",
+    "nai5f": "nai-diffusion-5-full",
     "nai5_full": "nai-diffusion-5-full",
+    "nai5m": "nai-diffusion-5-full-medium",
     "nai5_medium": "nai-diffusion-5-full-medium",
     "nai5_full_medium": "nai-diffusion-5-full-medium",
     "nai5_c": "nai-diffusion-5-curated",
@@ -380,6 +383,8 @@ async def start_process(
     "model",
     ["模型"],
     lambda ctx: (
+        "聊天简写：model=nai5m（V5 Medium）、model=nai5f（V5 Full）、"
+        "model=nai45f（V4.5 Full）；仅切换本次请求，不修改默认模型。\n\n"
         f"有这些模型可选：\n\n{format_list(AVAILABLE_MODELS, AVAILABLE_MODEL_NAME_MAP)}"
     ),
 )

@@ -8,7 +8,9 @@
 
 ### V5 Medium
 
-使用 `model=nai5_medium` 或 `model=nai-diffusion-5-full-medium` 选择。
+聊天中用 `model=nai5m` 选择 Medium、`model=nai5f` 选择 V5 Full、
+`model=nai45f` 选择 V4.5 Full，仅覆盖本次请求，不修改默认模型。
+完整模型名称及原有简写继续支持。
 插件会使用固定 14 步、Euler Ancestral、官方 Heavy 负面预设，
 并关闭 CFG Rescale 和 SMEA；这些固定设置优先于全局默认值、预设和单次参数。
 其他模型的默认值和参数行为保持不变。

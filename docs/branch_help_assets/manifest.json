@@ -1,6 +1,6 @@
 {
-  "source_sha256": "6b630a30fd97776cefaa5eab1859e41128dac0a214b8ab3eb8015d2964cca4e4",
-  "source_lines": 692,
+  "source_sha256": "50a8f239d88fa8ab7ecccf9e57f736faaac1a51887713f04147297b063e29bb9",
+  "source_lines": 697,
   "images": {
     "home": {
       "size": [
@@ -23,11 +23,11 @@
     "params": {
       "size": [
         1058,
-        5926
+        6081
       ],
-      "bytes": 1081927,
-      "sha256": "3fe806b226d5eaf35c4c49d50d9f73f94fdc6f430d94d2a97308fd42a907cc43",
-      "markdown_sha256": "557cd7d2476b22da121e567484b019d0ccb6b840595e0ec3c0436c12d04da54f",
+      "bytes": 1131159,
+      "sha256": "bc65922e69eb1bc19900d37b0705bfabb1df9bd3e1a5291deddeb11a3f3fdc92",
+      "markdown_sha256": "65d5f6e176f7c882a340aca5495c0601f3f9748535839f38e0eab0d3dc71b536",
       "renderer": "pillowmd 0.7.3, Pillow 13.0.0, autoPage=False"
     },
     "presets": {

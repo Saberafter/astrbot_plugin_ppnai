@@ -35,6 +35,9 @@ def test_exact_help_commands(message: str, topic: str):
     "/nai预设列表",
     "/nai 预设 tag=1girl",
     "/nai unknown-topic",
+    "/nai\nmodel=nai5m\ntag=1girl",
+    "/nai\nmodel=nai5f\ntag=1girl",
+    "/nai\nmodel=nai45f\ntag=1girl",
 ])
 def test_drawing_commands_are_not_consumed(message: str):
     assert manual_help.help_query(message) is None

@@ -29,7 +29,7 @@ def test_medium_can_be_selected_in_config_and_request():
 
 
 @pytest.mark.parametrize("alias", [
-    NAI5_MEDIUM_MODEL, "nai5_medium", "nai5_full_medium",
+    NAI5_MEDIUM_MODEL, "nai5m", "nai5_medium", "nai5_full_medium",
 ])
 def test_command_aliases_and_conflicting_defaults(alias: str):
     config = Config()

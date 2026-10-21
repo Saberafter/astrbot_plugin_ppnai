@@ -6,13 +6,15 @@
 
 ```text
 /nai
-model=nai5_medium
+model=nai5m
 tag=1girl, outdoors, smile
 ```
 
-完整模型 ID 为 `nai-diffusion-5-full-medium`，简写 `nai5_medium`、
-`nai5_full_medium` 均可。也可以在管理面板中将它设为默认模型；
-本次更新不会主动切换现有默认模型。
+完整模型 ID 为 `nai-diffusion-5-full-medium`，简写 `nai5m`、
+`nai5_medium`、`nai5_full_medium` 均可。
+聊天中使用 `model=nai5f` 选择 V5 Full，`model=nai45f` 选择 V4.5 Full。
+`model=` 仅覆盖本次请求，不修改默认模型；不写时仍使用默认值或预设。
+也可以在管理面板中设置默认模型，更新插件不会主动切换现有默认模型。
 
 ## 固定参数
 

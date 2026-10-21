@@ -11,18 +11,23 @@
 - `nai-diffusion-4-full` `nai4_full` - NAI4 完整版
 - `nai-diffusion-4-curated-preview` `nai4_c_p` - NAI4 精选预览版
 - `nai-diffusion-4-5-curated` `nai4.5_c` - NAI4.5 精选版
-- `nai-diffusion-4-5-full` `nai4.5_full` - NAI4.5 完整版
-- `nai-diffusion-5-full` `nai5_full` - NAI5 完整版
-- `nai-diffusion-5-full-medium` `nai5_medium` - NAI5 Medium
+- `nai-diffusion-4-5-full` `nai45f` - NAI4.5 完整版
+- `nai-diffusion-5-full` `nai5f` - NAI5 完整版
+- `nai-diffusion-5-full-medium` `nai5m` - NAI5 Medium
 - `nai-diffusion-5-curated` `nai5_c` - NAI5 精选版
 
 Medium 固定使用 14 步、Euler Ancestral、官方 Heavy 负面预设，
 CFG Rescale 为 0，SMEA 关闭。上述固定设置优先于默认值、预设和单次参数；
-其他模型不受影响。完整名称或 `nai5_full_medium` 简写也可使用。
+其他模型不受影响。
+
+在绘图消息中添加 `model=nai5m`、`model=nai5f` 或 `model=nai45f`，
+仅切换本次请求，不修改面板默认模型；下一次不写 `model=` 时仍按默认值或预设。
+完整模型名称和旧简写 `nai5_medium`、`nai5_full_medium`、`nai5_full`、
+`nai4.5_full` 继续支持。
 
 ```
 /nai
-model=nai5_medium
+model=nai5m
 tag=1girl, outdoors, smile
 ```
 
