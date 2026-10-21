@@ -1,13 +1,21 @@
 """用户额度管理模块"""
 
 import asyncio
-import json
 import random
-from datetime import date
+import threading
+from datetime import date, datetime, time, timedelta
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, Field
+
+from .draw_statistics import (
+    BEIJING,
+    DAY_START_HOUR,
+    DrawStatistics,
+    rebuild_draw_days,
+    statistics_day,
+)
 
 if TYPE_CHECKING:
     from .config import Config
@@ -27,6 +35,7 @@ class UserDataStore(BaseModel):
     users: dict[str, UserData] = Field(default_factory=dict, description="用户数据")
     whitelist: list[str] = Field(default_factory=list, description="白名单用户")
     blacklist: list[str] = Field(default_factory=list, description="黑名单用户")
+    draw_day_start_hour: int = Field(default=0, description="绘图统计日的北京时间起始小时")
 
 
 class UserManager:
@@ -36,6 +45,7 @@ class UserManager:
         self.data_file = data_dir / "user_data.json"
         self.data_dir = data_dir
         self._store: UserDataStore | None = None
+        self._lock = threading.RLock()
     
     def _ensure_dir(self):
         """确保数据目录存在"""
@@ -43,29 +53,47 @@ class UserManager:
     
     def _load(self) -> UserDataStore:
         """加载用户数据"""
-        if self._store is not None:
-            return self._store
-        
-        self._ensure_dir()
-        if self.data_file.exists():
-            try:
-                data = json.loads(self.data_file.read_text("utf-8"))
-                self._store = UserDataStore.model_validate(data)
-            except Exception:
-                self._store = UserDataStore()
-        else:
-            self._store = UserDataStore()
-        return self._store
+        with self._lock:
+            if self._store is not None:
+                return self._store
+            self._ensure_dir()
+            if self.data_file.exists():
+                original = self.data_file.read_bytes()
+                try:
+                    store = UserDataStore.model_validate_json(original)
+                except ValueError as exc:
+                    raise ValueError("无法读取用户数据，原文件未改动") from exc
+                if store.draw_day_start_hour == 0:
+                    rebuilt = rebuild_draw_days(
+                        {uid: user.draw_daily for uid, user in store.users.items()},
+                        self.data_dir / "anlas_audit.jsonl",
+                    )
+                    for uid, days in rebuilt.items():
+                        store.users[uid].draw_daily = days
+                    store.draw_day_start_hour = DAY_START_HOUR
+                    backup = self.data_dir / "user_data.before-5am-stats.json"
+                    if not backup.exists():
+                        backup.write_bytes(original)
+                    self._write_store(store)
+                elif store.draw_day_start_hour != DAY_START_HOUR:
+                    raise ValueError("用户数据的绘图统计日口径不受支持，原文件未改动")
+            else:
+                store = UserDataStore(draw_day_start_hour=DAY_START_HOUR)
+            self._store = store
+            return store
+
+    def _write_store(self, store: UserDataStore) -> None:
+        temporary = self.data_file.with_suffix(".json.tmp")
+        temporary.write_text(store.model_dump_json(indent=2), encoding="utf-8")
+        temporary.replace(self.data_file)
     
     def _save(self):
         """保存用户数据"""
-        if self._store is None:
-            return
-        self._ensure_dir()
-        self.data_file.write_text(
-            self._store.model_dump_json(indent=2),
-            "utf-8"
-        )
+        with self._lock:
+            if self._store is None:
+                return
+            self._ensure_dir()
+            self._write_store(self._store)
     
     def _get_user(self, user_id: str) -> UserData:
         """获取用户数据，不存在则创建"""
@@ -198,24 +226,44 @@ class UserManager:
         """记录成功生成的图片；失败请求不调用本方法。"""
         if count <= 0:
             return
-        user = self._get_user(user_id)
-        today = date.today().isoformat()
-        user.draw_total += count
-        user.draw_daily[today] = user.draw_daily.get(today, 0) + count
-        if display_name.strip():
-            user.display_name = display_name.strip()
-        self._save()
+        with self._lock:
+            user = self._get_user(user_id)
+            today = statistics_day().isoformat()
+            user.draw_total += count
+            user.draw_daily[today] = user.draw_daily.get(today, 0) + count
+            if display_name.strip():
+                user.display_name = display_name.strip()
+            self._save()
+
+    def get_draw_statistics(self, days: int = 1) -> DrawStatistics:
+        if days < 1:
+            raise ValueError("统计天数必须大于 0")
+        with self._lock:
+            last_day = statistics_day()
+            first_day = last_day - timedelta(days=days - 1)
+            dates = [first_day + timedelta(days=index) for index in range(days)]
+            daily = {day: 0 for day in dates}
+            rows = []
+            for user_id, user in self._load().users.items():
+                count = 0
+                for day in dates:
+                    value = user.draw_daily.get(day.isoformat(), 0)
+                    daily[day] += value
+                    count += value
+                if count > 0:
+                    rows.append((user_id, user.display_name, count))
+            start = datetime.combine(first_day, time(DAY_START_HOUR), BEIJING)
+            return DrawStatistics(
+                start=start,
+                end=start + timedelta(days=days),
+                daily_counts=list(daily.items()),
+                ranking=sorted(rows, key=lambda row: (-row[2], row[0])),
+            )
 
     def get_today_draw_ranking(
         self, limit: int | None = None
     ) -> list[tuple[str, str, int]]:
-        today = date.today().isoformat()
-        rows = [
-            (user_id, user.display_name, user.draw_daily.get(today, 0))
-            for user_id, user in self._load().users.items()
-            if user.draw_daily.get(today, 0) > 0
-        ]
-        ranking = sorted(rows, key=lambda row: (-row[2], row[0]))
+        ranking = self.get_draw_statistics().ranking
         return ranking if limit is None else ranking[:max(1, limit)]
 
     def get_total_draw_count(self) -> int:
@@ -233,6 +281,9 @@ class UserManager:
 
     async def aget_total_draw_count(self) -> int:
         return await asyncio.to_thread(self.get_total_draw_count)
+
+    async def aget_draw_statistics(self, days: int = 1) -> DrawStatistics:
+        return await asyncio.to_thread(self.get_draw_statistics, days)
     
     # ========== 签到系统 ==========
     
@@ -275,8 +326,9 @@ class UserManager:
     
     def reload(self):
         """重新加载数据（用于外部修改后刷新）"""
-        self._store = None
-        self._load()
+        with self._lock:
+            self._store = None
+            self._load()
 
     async def acheckin(self, user_id: str, config: "Config") -> tuple[bool, int, str]:
         return await asyncio.to_thread(self.checkin, user_id, config)

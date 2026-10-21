@@ -86,6 +86,7 @@ from .src.character_keep_store import CharacterKeepStore
 from .src.params import _collect_images_with_replies, parse_req
 from .src.image_io import resolve_image
 from .src.user_manager import UserManager
+from .src.draw_statistics import format_draw_statistics
 from .src.preset_manager import PresetManager
 from .src.preview_manager import PreviewManager
 from .src.image_library import ImageLibraryManager, LibraryImage
@@ -1192,17 +1193,14 @@ class Plugin(Star):
     @event_filter.command("nai今日排行")
     async def cmd_nai_today_ranking(self, event: AstrMessageEvent):
         """查看今日成功出图排行榜（前十名）"""
-        ranking = await self.user_manager.aget_today_draw_ranking(limit=10)
-        if not ranking:
-            yield event.plain_result("今日还没有成功生成的图片。")
-            return
-        medals = ("🥇", "🥈", "🥉")
-        lines = ["今日绘图排行榜"]
-        for index, (user_id, name, count) in enumerate(ranking, 1):
-            display = name or f"用户 {user_id[-4:]}"
-            prefix = medals[index - 1] if index <= len(medals) else f"{index}."
-            lines.append(f"{prefix} {display}：{count} 张")
-        yield event.plain_result("\n".join(lines))
+        statistics = await self.user_manager.aget_draw_statistics()
+        yield event.plain_result(format_draw_statistics(statistics))
+
+    @event_filter.command("nai七日统计")
+    async def cmd_nai_seven_day_statistics(self, event: AstrMessageEvent):
+        """查看包含当前统计日在内的七日出图统计"""
+        statistics = await self.user_manager.aget_draw_statistics(days=7)
+        yield event.plain_result(format_draw_statistics(statistics))
 
     @event_filter.command("nai总数")
     async def cmd_nai_total_count(self, event: AstrMessageEvent):

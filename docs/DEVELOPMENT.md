@@ -41,6 +41,17 @@ uv pip install --python .venv/Scripts/python.exe -r requirements.txt -r requirem
 
 不要把运行配置、用户数据、Token、Cookie 或生成记录放入仓库。
 
+## 绘图统计迁移
+
+v1.7.5 起绘图统计使用北京时间 05:00 分界，签到仍沿用原来的自然日规则。
+首次加载旧用户文件时，程序按用户和原自然日核对 `anlas_audit.jsonl`
+中的逐条成功记录，完全一致才备份为 `user_data.before-5am-stats.json`
+并重算每日统计；累计、额度、名单和签到日期保持不变。
+`draw_day_start_hour=5` 标记迁移完成，后续不会重复回放审计。
+审计缺失、不完整或用户文件损坏时会明确报错，拒绝写入，不会清空数据。
+此时先补齐可核对的记录或回滚代码，不要手工伪造迁移标记。
+回滚涉及用户文件时先检查升级后是否有新出图，不能直接用旧备份覆盖新增记录。
+
 ## 从 GitHub 更新 VPS
 
 推送 GitHub 不会自动修改 VPS。首次接入维护仓库时，需要：

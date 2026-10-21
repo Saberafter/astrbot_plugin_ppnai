@@ -1,15 +1,16 @@
 {
-  "source_sha256": "466fb0d0522207a76ee8337eb83dbb679d568befc2cee2e96d582bfc844fc346",
-  "source_lines": 706,
+  "source_sha256": "fe351eab49ffaf9d01c838d2fd69765a522180891294be615ef202fda0409b12",
+  "source_lines": 722,
   "images": {
     "home": {
       "size": [
-        693,
-        1760
+        701,
+        1796
       ],
-      "bytes": 298496,
-      "sha256": "932d2bce156bbe689745548f6a00fcd08c1cdc0bd23e657dc7f0f6ddf919ee3f",
-      "markdown_sha256": "cd25cafd00b6e42d2c24ab2261b79f44d9483b8ed7368c4ee7b987afd87377e1"
+      "bytes": 298446,
+      "sha256": "babc1dcc851983b73211950eddcd689a35ce02cb2a82645d1c54fba84d00e54f",
+      "markdown_sha256": "3f3aa85b530ddd955f765239b9dd0bd4dcb11a02fff53523b86ffd2faa6381a4",
+      "renderer": "pillowmd 0.7.3, Pillow 13.0.0, autoPage=False"
     },
     "draw": {
       "size": [
@@ -23,11 +24,11 @@
     "params": {
       "size": [
         1058,
-        6081
+        6161
       ],
-      "bytes": 1129022,
-      "sha256": "65d730b02e6d19bf8b5a9bff517f917673d9aaaf945a47e694aad781c3516b19",
-      "markdown_sha256": "ddda98d38b2a205e6bc23ab26dd9a2ed949ba021b51481cba5d7c09694461556",
+      "bytes": 1151583,
+      "sha256": "109815c0437c8dfba86e7bfb067b9b658c85a9789125800b65a0f1501de0e33c",
+      "markdown_sha256": "8475da03f15f7181763cdc9133412b7958645afda0a49ae45baa13ebe5cf7725",
       "renderer": "pillowmd 0.7.3, Pillow 13.0.0, autoPage=False"
     },
     "presets": {
@@ -78,11 +79,12 @@
     "quota": {
       "size": [
         1060,
-        2036
+        2471
       ],
-      "bytes": 299179,
-      "sha256": "f5d2f2c5195a7459985c993823ab7d453afe74ec9f51e1501c13bca6bfc9e8dd",
-      "markdown_sha256": "9d4ddb0175c9215e716e725e3b6543d478f9d429b8dc4c7591ec5a8963c93a56"
+      "bytes": 442776,
+      "sha256": "cea97b0fc757eb4ebbe8c78411670934f2ed52a469fb83cdbcc994ce7d1b78a1",
+      "markdown_sha256": "04718a5d6eee0c0ce07e2a60ce9374eeb76b4fd57ac5162ea5f7fc4abbe1d809",
+      "renderer": "pillowmd 0.7.3, Pillow 13.0.0, autoPage=False"
     },
     "output": {
       "size": [
