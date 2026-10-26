@@ -8,7 +8,6 @@ from __future__ import annotations
 import asyncio
 import math
 from collections.abc import AsyncIterator
-from datetime import datetime, timedelta, timezone
 
 import httpx
 
@@ -64,11 +63,7 @@ async def handle_nai_accounts(plugin, event) -> AsyncIterator:
             return f"账号 {index}：查询失败（{type(exc).__name__}）"
 
     accounts = await asyncio.gather(*(query(i, token) for i, token in enumerate(tokens, 1)))
-    checked_at = datetime.now(timezone(timedelta(hours=8))).strftime("%Y-%m-%d %H:%M:%S")
-    yield event.plain_result(
-        "NovelAI 账户状态：\n" + "\n\n".join(accounts)
-        + f"\n查询时间：{checked_at}（北京时间）"
-    )
+    yield event.plain_result("NovelAI 账户状态：\n" + "\n\n".join(accounts))
 
 
 async def handle_anlas_audit(plugin, event) -> AsyncIterator:

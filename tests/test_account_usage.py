@@ -123,7 +123,7 @@ class AccountQueryTests(unittest.IsolatedAsyncioTestCase):
         self.assertIn("生图额度剩余：79%", result)
         self.assertIn("Anlas：订阅 10000，购买 0", result)
         self.assertIn("账号 2：查询失败（HTTPStatusError）", result)
-        self.assertIn("北京时间", result)
+        self.assertNotIn("查询时间", result)
         self.assertNotIn("synthetic-", result)
         self.assertNotIn("secret upstream", result)
 
