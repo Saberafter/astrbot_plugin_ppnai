@@ -41,14 +41,10 @@ def _is_enabled(value: str) -> bool:
 
 
 def iter_key_values(texts: Iterable[str]) -> Iterable[tuple[str, str]]:
-    """Yield key-value pairs from command/preset texts, ignoring non key-value lines."""
+    """Use the same parsed values as manual commands and preset merging."""
+    from .params import parse_params
     for text in texts:
-        for raw_line in text.splitlines():
-            line = raw_line.strip()
-            if not line or "=" not in line:
-                continue
-            key, value = line.split("=", 1)
-            yield key.strip(), value.strip()
+        yield from parse_params(text)
 
 
 def has_enabled_image_params(params: Mapping[str, str]) -> bool:

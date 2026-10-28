@@ -340,8 +340,11 @@ class STNaiGenerateImageArgs(BaseModel):
         str,
         Field(
             description=(
-                "Complete /nai command arguments, one key=value per line."
-                " Include tag=... and optional model=..., size=..., s1=...;"
+                "Complete /nai arguments: ordinary multiline text is the global prompt."
+                " Optional model=..., size=..., s1=... each occupy their own line."
+                " Use 角色1=左 and 角色2=右 to start character prompt sections;"
+                " 负面1= starts character 1 negative; negative= is always global."
+                " tag= switches back to the global positive prompt."
                 " do not include the /nai command prefix."
             )
         ),
@@ -421,7 +424,7 @@ class STNaiGenerateImageTool(ConfigNeededTool):
     name: str = "stnai_generate_image"
     description: str = """AI绘画提示词:
 基本规则:
-    触发条件: 用户要求使用AI绘图提示词、生成NAI tag或要求画图
+    触发条件: 仅在用户明确要求生成图片时调用。只写提示词、整理tag或 /nai写词 时不调用本工具。
     强制输出限制: 仅输出tag指令代码，严禁包含任何回复、口癖或废话。如生成有姓名角色时则不写服装和人物外貌细节，缺少的tag数用动作tag补充
     Tag数量要求: 约30个tag，必须细化服装、眼瞳与发型样式，体现设计主题感
     权重语法: "系数::tag::" (若末尾为数字需加下划线，如 "1.1::tag2_::")
@@ -430,7 +433,10 @@ class STNaiGenerateImageTool(ConfigNeededTool):
     自然语言: 复杂动作或细节难以用tag描述时，可直接嵌入英文短句描述，需详尽描述各类动作细节甚至一小片花纹。
     角色库: 生成角色Tag前，先调用 stnai_search_character_tags 查询用户原始请求；检索工具会返回可放入 description 的“角色名:角色库原始Tag”区块。AI 自行决定如何将原始Tag纳入绘图description/tag，Tag必须保持原样。不要自动生成 csN 选择器。
 输出模板:
-    /nai tag=<主体及人物tag>, <动作姿态tag>, <服装细节tag>, <场景与环境tag>(如前有具体人名则不写服装和人物外貌细节，改为各种动作姿态。)
+    /nai
+    <全局人数、构图、场景与环境tag，普通正文可自由换行>
+    多人时用 角色1=左、角色2=右 分区，下一行起分别写各自外貌、动作与道具；
+    负面1= 对应角色1负面，negative= 始终是全局负面，tag= 可切回全局正向。
     size=横图/竖图/方图（默认不写size）
     人物Tag预留库：检索结果由 stnai_search_character_tags 返回，AI自行决定是否纳入绘图description/tag。"""
     parameters: dict = Field(default_factory=dict)
@@ -469,27 +475,13 @@ class STNaiGenerateImageTool(ConfigNeededTool):
                 lines = lines[:-1]
             command_body = "\n".join(lines).strip()
 
-        command_lines: list[str] = []
-        for line in command_body.splitlines():
-            line = line.strip()
-            if not line:
-                continue
-            if line in {"/nai", "nai"}:
-                continue
-            if line.startswith("/nai "):
-                line = line.removeprefix("/nai ").strip()
-            elif line.startswith("nai "):
-                line = line.removeprefix("nai ").strip()
-            if line and "=" not in line:
-                line = f"tag={line}"
-            if line:
-                command_lines.append(line)
-
-        if not command_lines:
+        from .src.input_parser import strip_command
+        command_body = strip_command(command_body)
+        if not command_body:
             return "请提供有效的 /nai 参数。"
 
         original_message = event.message_str
-        event.message_str = f"{COMMAND}\n" + "\n".join(command_lines)
+        event.message_str = f"{COMMAND}\n" + command_body
         try:
             async for result in self.nai_command_handler_init(event):
                 await event.send(result)
@@ -898,13 +890,17 @@ class Plugin(Star):
         优先级：直接参数 > s1 > s2 > ...
         tag 和 negative 是累加，其他参数是覆盖
         """
-        raw_params = event.message_str.removeprefix(COMMAND).strip()
+        from .src.params import parse_params
+        from .src.input_parser import SELECTOR, strip_command
+        from .src.input_merge import merge_groups
+        raw_params = strip_command(event.message_str)
         if not raw_params:
             return None
         
         # 解析所有参数行
-        lines = raw_params.split('\n')
-        direct_params: list[tuple[str, str]] = []  # 直接参数
+        parsed = list(parse_params(event.message_str))
+        selectors = [(key, value) for key, value in parsed if SELECTOR.fullmatch(key)]
+        direct_params = [(key, value) for key, value in parsed if not SELECTOR.fullmatch(key)]
         preset_params_list: list[list[tuple[str, str]]] = []  # 按预设编号排序的预设参数
         preset_numbers: list[int] = []  # 预设编号列表
         preset_names: list[str] = []
@@ -920,70 +916,30 @@ class Plugin(Star):
         preset_pattern = re.compile(r'^s(\d+)$')
         cs_pattern = re.compile(r'^cs(\d+)$')
         
-        for line in lines:
-            line = line.strip()
-            if not line:
+        for key, value in selectors:
+            cs_match = cs_pattern.fullmatch(key)
+            cs_num = 1 if key == "cs" else int(cs_match[1]) if cs_match else 0
+            if cs_num:
+                existing = cs_entries.get(cs_num)
+                if existing and existing != value:
+                    raise ValueError(f"cs{cs_num} 重复且不一致")
+                cs_entries[cs_num] = value
                 continue
-            
-            if '=' in line:
-                key, value = line.split('=', 1)
-                key = key.strip()
-                value = value.strip()
-                
-                if key == "cs":
-                    cs_num = 1
-                else:
-                    cs_match = cs_pattern.match(key)
-                    cs_num = int(cs_match.group(1)) if cs_match else 0
-
-                if cs_num:
-                    existing = cs_entries.get(cs_num)
-                    if existing and existing != value:
-                        raise ValueError(f"cs{cs_num} 重复且不一致")
-                    cs_entries[cs_num] = value
-                    continue
-
-                # 检查是否是预设参数
-                if key == "s":
-                    preset_num = 1
-                else:
-                    match = preset_pattern.match(key)
-                    preset_num = int(match.group(1)) if match else 0
-
-                if preset_num:
-                    preset_owner_filter = resource_owner_filter
-                    if value == (self.config.defaults.default_preset or "").strip():
-                        preset_owner_filter = None
-                    preset = await asyncio.to_thread(
-                        self.preset_manager.get_preset, value, preset_owner_filter
-                    )
-                    if preset is None:
-                        raise ValueError(f"预设 {value} 不存在，使用 nai预设列表 查看可用预设")
-                    
-                    # 解析预设内容
-                    preset_lines = preset.content.split('\n')
-                    preset_params: list[tuple[str, str]] = []
-                    for pl in preset_lines:
-                        pl = pl.strip()
-                        if not pl:
-                            continue
-                        if '=' in pl:
-                            pk, pv = pl.split('=', 1)
-                            if pk.strip() == "cs":
-                                continue
-                            preset_params.append((pk.strip(), pv.strip()))
-                        else:
-                            # 没有 = 号的行视为 tag
-                            preset_params.append(('tag', pl))
-                    
-                    preset_numbers.append(preset_num)
-                    preset_names.append(value)
-                    preset_params_list.append(preset_params)
-                else:
-                    direct_params.append((key, value))
-            else:
-                # 强制键值对格式，不接受无等号的行
-                raise ValueError(f"参数格式错误：'{line}'，请使用键值对格式，例如：tag=xxx")
+            match = preset_pattern.fullmatch(key)
+            preset_num = 1 if key == "s" else int(match[1])
+            if preset_num in preset_numbers:
+                raise ValueError(f"s{preset_num} 重复，请用不同编号叠加预设")
+            preset_owner_filter = resource_owner_filter
+            if value == (self.config.defaults.default_preset or "").strip():
+                preset_owner_filter = None
+            preset = await asyncio.to_thread(
+                self.preset_manager.get_preset, value, preset_owner_filter
+            )
+            if preset is None:
+                raise ValueError(f"预设 {value} 不存在，使用 nai预设列表 查看可用预设")
+            preset_numbers.append(preset_num)
+            preset_names.append(value)
+            preset_params_list.append(list(parse_params(preset.content)))
 
         # 默认预设兜底：用户未指定任何 sN= 时，自动应用配置中的默认预设
         if not preset_numbers:
@@ -999,18 +955,7 @@ class Plugin(Star):
                         f"但该预设不存在，已跳过"
                     )
                 else:
-                    default_preset_params: list[tuple[str, str]] = []
-                    for pl in default_preset.content.split('\n'):
-                        pl = pl.strip()
-                        if not pl:
-                            continue
-                        if '=' in pl:
-                            pk, pv = pl.split('=', 1)
-                            if pk.strip() == "cs":
-                                continue
-                            default_preset_params.append((pk.strip(), pv.strip()))
-                        else:
-                            default_preset_params.append(('tag', pl))
+                    default_preset_params = list(parse_params(default_preset.content))
                     preset_numbers.append(1)
                     preset_names.append(default_name)
                     preset_params_list.append(default_preset_params)
@@ -1018,57 +963,16 @@ class Plugin(Star):
         # 按预设编号排序（1, 2, 3, ...）
         sorted_presets = sorted(zip(preset_numbers, preset_params_list), key=lambda x: x[0])
         
-        # 合并参数
-        # - tag 和 negative 是累加的（按优先级顺序）
-        # - prepend_* 是累加的（高优先级在前）
-        # - append_* 是累加的（高优先级在后）
-        # - 其他参数是覆盖的
-        merged: dict[str, str] = {}
-        tag_parts: list[str] = []
-        negative_parts: list[str] = []
-        prepend_tag_parts: list[str] = []
-        append_tag_parts: list[str] = []
-        prepend_negative_parts: list[str] = []
-        append_negative_parts: list[str] = []
-        
-        # 从最低优先级到最高：sN, ..., s2, s1, 直接参数
         all_params_groups = [p for _, p in reversed(sorted_presets)] + [direct_params]
-        
-        for params in all_params_groups:
-            for key, value in params:
-                if key == 'tag':
-                    tag_parts.append(value)
-                elif key in ('negative', '反向提示词'):
-                    negative_parts.append(value)
-                elif key in ('prepend_tag', '前置正向', '前置正向提示词'):
-                    # 高优先级在前，所以后遍历的插入到列表开头
-                    prepend_tag_parts.insert(0, value)
-                elif key in ('append_tag', '后置正向', '后置正向提示词'):
-                    # 高优先级在后，所以后遍历的追加到列表末尾
-                    append_tag_parts.append(value)
-                elif key in ('prepend_negative', '前置负面', '前置负面提示词'):
-                    # 高优先级在前
-                    prepend_negative_parts.insert(0, value)
-                elif key in ('append_negative', '后置负面', '后置负面提示词'):
-                    # 高优先级在后
-                    append_negative_parts.append(value)
-                else:
-                    # 其他参数直接覆盖
-                    merged[key] = value
-        
-        # 解析批量数量（不参与绘图参数传递）
-        raw_count = merged.pop("n", "")
+        final_params, _, _ = merge_groups(all_params_groups)
+        raw_count = next((value for group in reversed(all_params_groups)
+                          for key, value in reversed(group) if key == "n"), "")
         if raw_count:
             if not raw_count.isdigit() or int(raw_count) < 1:
                 raise ValueError("参数 n 必须是大于等于 1 的整数")
             batch_count = int(raw_count)
         else:
             batch_count = 1
-
-        merged.pop("QR", None)
-        merged.pop("QK", None)
-        merged.pop("qr", None)
-        merged.pop("qk", None)
 
         max_n = int(getattr(self.config.request, "max_n", 0) or 0)
         if max_n > 0 and batch_count > max_n:
@@ -1090,44 +994,16 @@ class Plugin(Star):
                 owner_id, cs_tag = resolved_tag
                 if not cs_tag:
                     raise ValueError(f"角色Tag {cs_name} 内容为空")
-                tag_parts.append(cs_tag)
+                existing_tag = next((value for key, value in final_params if key == "tag"), "")
+                final_params = [(key, value) for key, value in final_params if key != "tag"]
+                final_params.append(("tag", f"{existing_tag}, {cs_tag}" if existing_tag else cs_tag))
                 cs_resource_keys.append(f"ck:{owner_id}:{cs_name}")
 
-        # 构建最终参数字符串
-        final_params: list[str] = []
-        
-        # 合并 tag（按优先级顺序）
-        if tag_parts:
-            final_params.append(f'tag={", ".join(tag_parts)}')
-        
-        # 合并 prepend/append 提示词
-        if prepend_tag_parts:
-            final_params.append(f'prepend_tag={", ".join(prepend_tag_parts)}')
-        if append_tag_parts:
-            final_params.append(f'append_tag={", ".join(append_tag_parts)}')
-        if prepend_negative_parts:
-            final_params.append(f'prepend_negative={", ".join(prepend_negative_parts)}')
-        if append_negative_parts:
-            final_params.append(f'append_negative={", ".join(append_negative_parts)}')
-        
-        # 添加其他参数
-        for key, value in merged.items():
-            final_params.append(f'{key}={value}')
-        
-        # 合并 negative
-        if negative_parts:
-            final_params.append(f'negative={", ".join(negative_parts)}')
-        
-        final_raw = '\n'.join(final_params)
-        
-        image_params = {"i2i", "i2i_image", "vibe_transfer", "v_t", "character_keep", "c_k", "ck"}
+        image_params = {"i2i", "vibe_transfer", "character_keep"}
         source_images = _collect_images_with_replies(event.message_obj.message)
         parse_images = []
         source_index = 0
-        for line in final_raw.splitlines():
-            if "=" not in line:
-                continue
-            key, value = (part.strip() for part in line.split("=", 1))
+        for key, value in final_params:
             if key not in image_params or value.lower() in {"false", "0", "off", "关"}:
                 continue
             is_library_name = False
@@ -1167,7 +1043,7 @@ class Plugin(Star):
                 )
                 parse_images.append(LibraryImage(data_uri))
         parse_images.extend(source_images[source_index:])
-        req = await parse_req(final_raw, parse_images, self.config, is_whitelisted)
+        req = await parse_req(final_params, parse_images, self.config, is_whitelisted)
         return req, batch_count, preset_names, list(cs_entries.values()), cs_resource_keys
 
     # ========== 签到命令 ==========
@@ -1495,7 +1371,7 @@ class Plugin(Star):
     def _parse_presets_from_params(
         self,
         raw_params: str,
-    ) -> tuple[list[str], dict[str, str], list[str]]:
+    ) -> tuple[list[str], dict[str, str], list[str], list[tuple[str, str]]]:
         """从参数中解析预设列表和其他参数
         
         Returns:
@@ -1510,15 +1386,9 @@ class Plugin(Star):
         image_params: list[tuple[str, str]] = []
         other_params: dict[str, str] = {}
         
-        for line in raw_params.split('\n'):
-            line = line.strip()
-            if not line:
-                continue
-            
-            if '=' in line:
-                key, value = line.split('=', 1)
-                key = key.strip()
-                value = value.strip()
+        from .src.params import parse_params
+        for key, value in parse_params(raw_params):
+            if key:
                 
                 if key == "s":
                     preset_num = 1
@@ -1649,6 +1519,25 @@ class Plugin(Star):
             yield result
 
     # ========== 画图命令 ==========
+
+    @event_filter.command("nai写词")
+    async def cmd_nai_plan(self, event: AstrMessageEvent):
+        """按共享写词 skill 返回文本，不进入绘图或扣额流程。"""
+        from .src.prompt_planner import plan_prompt
+        instructions = event.message_str.strip().lstrip("/").removeprefix("nai写词").strip()
+        images = _collect_images_with_replies(event.message_obj.message)
+        if not instructions and not images:
+            yield event.plain_result("用法：/nai写词 画面需求\n也可以附上参考图；仅返回可复制的绘图命令和中文对照。")
+            return
+        try:
+            result = await plan_prompt(self.context, event, self.config, instructions or "依据参考图写提示词", images)
+            # Keep translation outside the command in its own chat message.
+            command, separator, translation = result.partition("\n中文对照")
+            yield event.plain_result(command.strip())
+            if separator:
+                yield event.plain_result("中文对照" + translation)
+        except Exception as exc:
+            yield event.plain_result(f"写词失败：{format_readable_error(exc)}")
 
     @event_filter.command("nai帮助")
     async def cmd_nai_help(self, event: AstrMessageEvent):

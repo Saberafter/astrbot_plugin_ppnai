@@ -18,7 +18,7 @@ from .image_params import iter_key_values, resolve_image_params
 from .llm import ReturnToLLMError, llm_generate_advanced_req
 from .llm_utils import format_readable_error
 from .generation_report import build_image_output, format_generation_report, get_input_image_bytes
-from .params import _collect_images_with_replies, parse_req
+from .params import _collect_images_with_replies, parse_req, parse_params
 from .handlers_shared import (
     apply_explicit_overrides,
     extract_batch_count,
@@ -120,7 +120,7 @@ async def _build_optional_output_content(
     return content
 
 
-def _strip_image_param_lines(raw_params: str) -> str:
+def _strip_image_param_lines(raw_params):
     blocked_keys = {
         "i2i",
         "vibe_transfer",
@@ -134,16 +134,7 @@ def _strip_image_param_lines(raw_params: str) -> str:
         "qr",
         "qk",
     }
-    kept_lines: list[str] = []
-    for raw_line in raw_params.splitlines():
-        line = raw_line.strip()
-        if not line or "=" not in line:
-            continue
-        key, _value = line.split("=", 1)
-        if key.strip() in blocked_keys:
-            continue
-        kept_lines.append(line)
-    return "\n".join(kept_lines)
+    return [(key, value) for key, value in parse_params(raw_params) if key not in blocked_keys]
 
 
 async def handle_nai_draw(plugin, event, waiting_replies: list[str]) -> AsyncIterator:
@@ -168,10 +159,14 @@ async def handle_nai_draw(plugin, event, waiting_replies: list[str]) -> AsyncIte
             yield event.plain_result(reason)
             return
 
-    raw_input = event.message_str.removeprefix("nai画图").strip()
-    preset_names, other_params, cs_names, image_params = (
-        plugin._parse_presets_from_params(raw_input)
-    )
+    raw_input = event.message_str.lstrip("/").removeprefix("nai画图").strip()
+    try:
+        preset_names, other_params, cs_names, image_params = (
+            plugin._parse_presets_from_params(raw_input)
+        )
+    except Exception as exc:
+        yield event.plain_result(f"参数解析失败：{format_readable_error(exc)}")
+        return
 
     # 默认预设兜底：用户未指定任何 sN= 时，自动应用配置中的默认预设
     if not preset_names:
@@ -258,10 +253,10 @@ async def handle_nai_draw(plugin, event, waiting_replies: list[str]) -> AsyncIte
         yield event.plain_result(f"参数解析失败：{format_readable_error(e)}")
         return
 
-    merged_raw, wrappers, explicit_ids = merge_nai_params(preset_contents, raw_input)
-    filtered_raw = _strip_image_param_lines(merged_raw)
     try:
-        if filtered_raw.strip():
+        merged_raw, wrappers, explicit_ids = merge_nai_params(preset_contents, raw_input)
+        filtered_raw = _strip_image_param_lines(merged_raw)
+        if filtered_raw:
             user_req = await parse_req(
                 filtered_raw,
                 [],

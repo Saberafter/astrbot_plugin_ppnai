@@ -151,6 +151,9 @@ class ReqAdditionMultiRole(BaseModel):  # 多角色控制
     prompt: str = ""  # 正向提示词
     negative_prompt: str = ""  # 反向提示词
     position: AvailablePositionsType = "C3"  # 位置
+    number: int | None = None
+    center: tuple[Annotated[float, Field(ge=0, le=1)], Annotated[float, Field(ge=0, le=1)]] | None = None
+    automatic: bool = False  # 旧数据继续从 position 读取坐标
 
 
 @model_with_model_config(REQ_MODEL_CONFIG)

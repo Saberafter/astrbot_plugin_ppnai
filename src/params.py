@@ -59,6 +59,7 @@ from .image_io import (
     resolve_image,
     resolve_image_as_jpeg,
 )
+from .input_parser import Pairs, decode_role, parse_input, parse_position
 
 if TYPE_CHECKING:
     from .config import Config
@@ -226,17 +227,9 @@ class ParamAssembler(Generic[T, TC]):
         return model
 
 
-def parse_params(raw_params: str) -> Generator[tuple[str, str], None, None]:
-    for line in raw_params.splitlines():
-        line = line.strip()
-        if not line:
-            continue
-        if "=" in line:
-            key, value = line.split("=", 1)
-            yield key.strip(), value.strip()
-        else:
-            # 强制键值对格式
-            raise ValueError(f"参数格式错误：'{line}'，请使用键值对格式，例如：tag=xxx")
+def parse_params(raw_params: str | Pairs) -> Generator[tuple[str, str], None, None]:
+    aliases = {key: infos[0].id for key, infos in req_model_assembler.appliers_map.items()}
+    yield from parse_input(raw_params, aliases)
 
 
 
@@ -400,7 +393,7 @@ async def apply_model(value: str, data: dict[str, Any], **_):
 
 @req_model_assembler.applier(
     "negative",
-    ["反向提示词", "ne"],
+    ["反向提示词", "ne", "负面"],
     lambda _: "反向提示词，描述不想出现的内容",
 )
 async def apply_negative(value: str, data: dict[str, Any], **_):
@@ -409,7 +402,7 @@ async def apply_negative(value: str, data: dict[str, Any], **_):
 
 @req_model_assembler.applier(
     "tag",
-    ["正向提示词"],
+    ["正向提示词", "正向"],
     lambda _: "正向提示词，描述期望生成的图片内容",
 )
 async def apply_tag(value: str, data: dict[str, Any], **_):
@@ -716,6 +709,11 @@ C3 为正中间"""
     ),
 )
 async def apply_role(value: str, data: dict[str, Any], ctx: "Config", **_):
+    if role := decode_role(value):
+        if not role.pop("declared", False) or not role["prompt"]:
+            raise ValueError(f"角色{role['number']} 缺少正向描述，请添加 角色{role['number']}=位置 和正文")
+        data.setdefault("addition", {}).setdefault("multi_role_list", []).append(role)
+        return
     # 解析格式：位置|正向提示词|反向提示词(可选)
     parts = value.split("|")
     if len(parts) < 2:
@@ -729,11 +727,7 @@ async def apply_role(value: str, data: dict[str, Any], ctx: "Config", **_):
     negative_prompt = parts[2].strip() if len(parts) > 2 else ""
     
     # 验证位置
-    if position not in AVAILABLE_POSITIONS:
-        raise ValueError(
-            f"位置 `{position}` 无效，可用位置：A1-E5\n"
-            "A-E 为横向（左→右），1-5 为纵向（上→下）"
-        )
+    center = parse_position(position)
     
     # 验证提示词
     if not prompt:
@@ -749,7 +743,9 @@ async def apply_role(value: str, data: dict[str, Any], ctx: "Config", **_):
     data["addition"]["multi_role_list"].append({
         "prompt": prompt,
         "negative_prompt": negative_prompt,
-        "position": position,
+        "position": position if position in AVAILABLE_POSITIONS else "C3",
+        "center": center,
+        "automatic": center is None,
     })
 
 
@@ -961,7 +957,7 @@ USER_DEFINABLE_FIELDS = list(req_model_assembler.appliers.keys())
 
 
 async def parse_req(
-    raw_params: str,
+    raw_params: str | Pairs,
     message: list[BaseMessageComponent],
     config: "Config",
     is_whitelisted: bool = False,
@@ -981,12 +977,14 @@ async def parse_req(
     
     # 进行权限检查
     post_check_limits(req, config, is_whitelisted)
+    from .characters import validate_characters
+    validate_characters(req)
     
     return req
 
 
 async def parse_req_with_remaining_images(
-    raw_params: str,
+    raw_params: str | Pairs,
     message: list[BaseMessageComponent],
     config: "Config",
     is_whitelisted: bool = False,
@@ -1000,6 +998,8 @@ async def parse_req_with_remaining_images(
     images: list[Image] = _collect_images_with_replies(message)
     req = await req_model_assembler.apply(input_params, images, config, is_whitelisted)
     post_check_limits(req, config, is_whitelisted)
+    from .characters import validate_characters
+    validate_characters(req)
     return req, images
 
 

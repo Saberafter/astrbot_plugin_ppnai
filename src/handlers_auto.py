@@ -25,6 +25,7 @@ from .handlers_nai import (
     _apply_curtain,
     _build_optional_output_content,
     build_draw_reaction_result,
+    _strip_image_param_lines,
 )
 from .anlas_audit import read_balance, record_generation
 
@@ -34,28 +35,6 @@ async def handle_auto_draw_off(plugin, event) -> AsyncIterator:
     if hasattr(plugin, "persist_auto_draw_info"):
         await plugin.persist_auto_draw_info()
     yield event.plain_result("❌ 自动画图已关闭")
-
-
-def _strip_image_param_lines(raw_params: str) -> str:
-    blocked_keys = {
-        "i2i",
-        "vibe_transfer",
-        "character_keep",
-        "vibe_transfer_info_extract",
-        "vibe_transfer_ref_strength",
-        "character_keep_vibe",
-        "character_keep_strength",
-    }
-    kept_lines: list[str] = []
-    for raw_line in raw_params.splitlines():
-        line = raw_line.strip()
-        if not line or "=" not in line:
-            continue
-        key, _value = line.split("=", 1)
-        if key.strip() in blocked_keys:
-            continue
-        kept_lines.append(line)
-    return "\n".join(kept_lines)
 
 
 async def _enable_auto_draw(
@@ -396,7 +375,7 @@ async def _auto_draw_generate(
                 ai_response_with_prefix = f"参考：{ai_response}"
                 merged_raw, wrappers, explicit_ids = merge_nai_params(preset_contents)
                 filtered_raw = _strip_image_param_lines(merged_raw)
-                if filtered_raw.strip():
+                if filtered_raw:
                     user_req, _remaining_images = await parse_req_with_remaining_images(
                         filtered_raw,
                         [],

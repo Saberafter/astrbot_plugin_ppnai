@@ -286,6 +286,8 @@ def _convert_req_to_official_format(req: Req, opus_free_mode: bool = False) -> d
         req: 请求对象
         opus_free_mode: 是否开启 Opus 免费模式（小图模式）
     """
+    from .characters import character_center, validate_characters
+    validate_characters(req)
     # LLM/explicit overrides can mutate a validated Req before it reaches the API.
     req.apply_model_constraints()
 
@@ -446,19 +448,22 @@ def _convert_req_to_official_format(req: Req, opus_free_mode: bool = False) -> d
         # 设置 Fidelity（映射到 secondary_strength）
         parameters["director_reference_secondary_strength_values"] = [float(ck.strength)]
     
-    # 处理多角色控制 - 转换为 v4_prompt 格式
-    # 注意：这个功能在官方API中实现方式较复杂，暂时简化处理
+    # Keep global and character captions separate in every official prompt field.
     if req.addition.multi_role_list:
-        # 多角色控制需要使用 v4_prompt 格式
-        # 这里暂时将多角色提示词合并到主提示词中
-        char_prompts = []
+        use_coords = not req.addition.multi_role_list[0].automatic
+        parameters["use_coords"] = use_coords
+        parameters["v4_prompt"]["use_coords"] = use_coords
         for role in req.addition.multi_role_list:
-            if role.prompt:
-                char_prompts.append(f"[{role.position}: {role.prompt}]")
-        if char_prompts:
-            # 追加到主提示词后面
-            prompt = f"{prompt}, {', '.join(char_prompts)}" if prompt else ', '.join(char_prompts)
-            logger.warning("[nai] 多角色控制功能在官方API中暂使用简化处理")
+            center = character_center(req, role)
+            parameters["characterPrompts"].append({
+                "prompt": role.prompt, "uc": role.negative_prompt, "center": center,
+            })
+            parameters["v4_prompt"]["caption"]["char_captions"].append({
+                "char_caption": role.prompt, "centers": [center],
+            })
+            parameters["v4_negative_prompt"]["caption"]["char_captions"].append({
+                "char_caption": role.negative_prompt, "centers": [center],
+            })
     
     # 构建最终请求
     request_body = {

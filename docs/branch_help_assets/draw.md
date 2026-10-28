@@ -2,7 +2,7 @@
 
 返回总览：`/nai`
 
-> 参数完整列表另见 `/nai 参数`。基础绘图请使用 `tag=...`，不要把帮助分支名当成绘图提示词。
+> 参数完整列表另见 `/nai 参数`。普通提示词可直接粘贴，自由换行；旧 `tag=` 仍有效。
 
 # 泡泡画图插件 使用文档
 
@@ -28,12 +28,56 @@
 
 ### 基础命令 `nai`
 
-直接使用提示词绘图（所有参数必须使用 `key=value` 格式）：
+普通正文就是正向提示词，保留换行、空行、权重和中英文描述。模型、尺寸、种子等参数仍独立一行：
 
 ```
-nai
-tag=1girl, coffee shop, smile
+/nai
+model=5f
+
+1girl, solo,
+white hair, blue eyes,
+
+white dress, standing,
+garden, sunlight
 ```
+
+### 多人分区
+
+```
+/nai
+model=5f
+size=1216x832
+2girls, garden, sunlight
+
+角色1=左
+girl, white hair, white dress
+
+角色2=右
+girl, black hair, black jacket
+
+负面1=
+black hair, black jacket
+
+负面2=
+white hair, white dress
+
+negative=
+blurry, watermark
+```
+
+`角色1=` / `role1=` 开始该角色正向；`负面1=` / `negative1=` 对应角色负面。再次进入同一编号会追加正文，普通参数不改变分区。`negative=` / `负面=` 始终是全局负面；单独一行 `tag=` 可切回全局正向。
+
+角色按编号排序，正向、负面、坐标分别绑定。位置可写九方位、A1～E5、0～1 的 x,y 坐标，详见 `/nai 参数`。所有角色须全部明确定位或全部自动，不混用。V3 不支持；V5 Medium 不支持自定义角色负面。
+
+独立 `键=值` 行键名未知会提示行号；若这是正文，用 `tag=键=值`。不加分类标题或注释，标题会成为提示词。
+
+### 只写词 `/nai写词`
+
+```
+/nai写词 两名女孩站在花园，左边白发白裙拿花，右边黑发夹克拿书
+```
+
+使用与聊天相同的 `anima-tag-planner` 规则，只返回可复制的 `/nai` 指令，中文对照另条发送；不生成图片、不扣绘图额度。使用高级参数 LLM，未配置则使用当前聊天模型；LLM 服务正常计费。开启识图后可附参考图。
 #### 批量生成（扣除对应额度）
 
 ```
